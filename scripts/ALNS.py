@@ -47,16 +47,16 @@ class Depot:
 class Node:
     """
     Pickup 및 Delivery 노드를 나타내는 클래스.
-    하나의 Request는 Pickup('P')과 Delivery('D') 두 개의 Node로 분리됩니다.
+    하나의 Request는 Pickup('P')과 Delivery('D') 두 개의 Node로 분리
     """
     def __init__(self, request: Request, node_type: str):
         self.request = request
         self.node_type = node_type  # 'P' (Pickup) or 'D' (Delivery)
         self.req_id = request.id
-        self.is_bypassed = False  # ce->se direct 연결 시 컨테이너 창고 방문을 생략하는 플래그
+        self.is_bypassed = False  # ce->se direct 연결 시 컨테이너 창고 방문을 생략할 수 있음.
 
         # 요청 종류별 P, D 지점, 시간창, 서비스 시간, 용량 변화 정의
-        if request.type == 'cf':  # Inbound Full: Terminal(P) -> Customer(D)
+        if request.type == 'cf':
             if node_type == 'P':
                 self.location_id = f"tm{request.terminal_index}"
                 self.e = request.e_t
@@ -70,7 +70,7 @@ class Node:
                 self.service_time = request.service_time
                 self.demand_delta = request.demand
 
-        elif request.type == 'sf':  # Outbound Full: Customer(P) -> Terminal(D)
+        elif request.type == 'sf':
             if node_type == 'P':
                 self.location_id = f"sf{request.id}"
                 self.e = request.e
@@ -84,7 +84,7 @@ class Node:
                 self.service_time = request.service_time_t
                 self.demand_delta = -request.demand
 
-        elif request.type == 'ce':  # Inbound Empty: Customer(P) -> Container Depot(D)
+        elif request.type == 'ce':
             if node_type == 'P':
                 self.location_id = f"ce{request.id}"
                 self.e = request.e
@@ -98,7 +98,7 @@ class Node:
                 self.service_time = request.service_time_t
                 self.demand_delta = -request.demand
 
-        elif request.type == 'se':  # Outbound Empty: Container Depot(P) -> Customer(D)
+        elif request.type == 'se':
             if node_type == 'P':
                 self.location_id = f"cd{request.terminal_index}"
                 self.e = -10000
@@ -150,7 +150,7 @@ class DrayageALNSSolver:
         self.cooling_rate = 0.999
         self.start_temp = 100
         self.min_temp = 0.1
-        self.noise_level = 0.05  # Noise Insertion 비율 (5%)
+        self.noise_level = 0.05  # Noise Insertion 비율
         
         self.destroy_ops = ['random', 'worst', 'time_window', 'related']
         self.repair_ops = ['greedy', 'regret']
@@ -161,7 +161,7 @@ class DrayageALNSSolver:
         self.capacity_penalty = 500
         self.location_related_factor = 0.7
         
-        # 연산자 관리
+        # 연산자
         self.weights = {
             'destroy': {op: 1.0 for op in self.destroy_ops},
             'repair': {op: 1.0 for op in self.repair_ops}
@@ -230,8 +230,7 @@ class DrayageALNSSolver:
 
     def _find_best_insertion_in_fleet(self, solution: Dict[str, List[Node]], req: Request, fleet_id: str, use_noise: bool = True) -> Tuple[float, int, int]:
         """
-        특정 차량에 요청(P, D)을 최적 위치에 삽입하는 비용 계산
-        개선: Hard Constraint 사전 스크리닝 및 Noise Insertion 반영
+        특정 차량에 요청을 최적 위치에 삽입하는 비용 계산
         """
         route = solution[fleet_id]
         if len(route) > 80:
@@ -251,7 +250,7 @@ class DrayageALNSSolver:
                 temp_route.insert(p, p_node)
                 temp_route.insert(d, d_node)
 
-                # 1. 실시간 적재량 사전 검증
+                # 실시간 적재량 사전 검증
                 load = 0
                 feasible_load = True
                 for n in temp_route:
@@ -263,16 +262,16 @@ class DrayageALNSSolver:
                 if not feasible_load:
                     continue
 
-                # 2. 실제 비용 평가
+                # 비용 평가
                 solution[fleet_id] = temp_route
                 cost, tv, cv = self.calculate_total_cost(solution)
                 solution[fleet_id] = route  # 원복
 
-                # 3. Hard Constraint Screening (제약 위반 또는 단절 아크 존재 시 탈락)
+                # 제약 위반 또는 단절 아크 존재 시 탈락
                 if tv > 0 or cv > 0 or cost >= 10000:
                     continue
 
-                # 4. Noise Insertion 적용 (지역 최적해 탈출용)
+                # Noise Insertion 적용(지역 최적해 탈출용)
                 if use_noise:
                     eval_cost = cost * (1.0 + random.uniform(-self.noise_level, self.noise_level))
                 else:
@@ -285,7 +284,7 @@ class DrayageALNSSolver:
         return best_cost, best_p, best_d
 
     def initial_solution(self) -> Dict[str, List[Node]]:
-        """탐욕적 방식으로 P/D 노드가 교대 배치될 수 있는 초기 해 생성"""
+        """greedy로 요청 노드가 교대 배치될 수 있는 초기 해 생성"""
         solution = {fleet.id: [] for fleet in self.list_fleet}
         unassigned = copy.deepcopy(self.list_request)
         
@@ -371,7 +370,7 @@ class DrayageALNSSolver:
                     current_location = node.location_id
                     continue
     
-                # 1. 이동 시간 및 이동 비용
+                # 이동 시간 및 이동 비용
                 arc_info = self.dict_arc[arc_key][node.location_id]
                 travel_time = arc_info[0]
                 travel_cost = arc_info[1]
@@ -379,23 +378,23 @@ class DrayageALNSSolver:
                 
                 arrival_time = current_time + travel_time
     
-                # 2. 대기 시간(Wait Time) 및 대기 비용 계산 (조기 도착 시)
+                # 대기 시간 및 대기 비용 계산 (조기 도착 시)
                 wait_time = max(0, node.e - arrival_time)             
                 waiting_cost = wait_time * self.cost_waiting
                 total_cost += waiting_cost
     
-                # 3. 서비스 시작 및 완료 시간
+                # 서비스 시작 및 완료 시간
                 start_service_time = arrival_time + max(0, node.e - arrival_time)  # 대기 시간 포함
                 finish_time = start_service_time + node.service_time
                 total_cost += node.service_time * self.cost_waiting
                 
-                # 4. 시간창 지연(Late Arrival) 페널티 계산
+                # time window 지연 페널티 계산
                 if start_service_time > node.l and node.l > 0:
                     viol = start_service_time - node.l
                     time_violation += viol
                     total_cost += viol * self.time_window_penalty
     
-                # 5. 용량 검증
+                # 용량 검증
                 current_load += node.demand_delta
                 if current_load > fleet.capacity:
                     cap_viol = current_load - fleet.capacity
@@ -404,11 +403,11 @@ class DrayageALNSSolver:
                 elif current_load < 0:
                     total_cost += 10000
     
-                # 6. 다음 노드를 위한 시간/위치 갱신
+                # 다음 노드를 위한 시간/위치 갱신
                 current_time = finish_time
                 current_location = node.location_id
                 
-            # 7. 운행 종료 시 잔여 화물/공컨테이너 적재 시 페널티 (미하차 방지)
+            # 운행 종료 시 잔여 화물/공컨테이너 적재 시 페널티 (미하차 방지)
             if current_load != 0:
                 total_cost += abs(current_load) * 100000
     
@@ -420,10 +419,10 @@ class DrayageALNSSolver:
     
         return total_cost, time_violation, capacity_violation
 
-    # ==================== Local Search (지역 탐색 모듈) ====================
+    # Local Search
     def local_search(self, solution: Dict[str, List[Node]]) -> Dict[str, List[Node]]:
         """
-        Repair 후 수행되는 Local Search 다듬기 모듈
+        Repair 후 수행되는 Local Search 다듬기
         1) Direct CE-SE Matching
         2) Container Depot Optimization
         3) Inter-route Relocate (차량 간 작업 재배치)
@@ -435,7 +434,7 @@ class DrayageALNSSolver:
         while improved:
             improved = False
 
-            # 1. Direct CE-SE Match 적용 시도
+            # 1. Direct CE-SE 며칭
             cand_sol = self.operator_direct_ce_se_match(current_sol)
             cand_cost, tv, cv = self.calculate_total_cost(cand_sol)
             if cand_cost < current_cost and tv == 0 and cv == 0:
@@ -444,7 +443,7 @@ class DrayageALNSSolver:
                 improved = True
                 continue
 
-            # 2. Container Depot 변경 시도
+            # 2. Container Depot 변경
             cand_sol = self.operator_change_container_depot(current_sol)
             cand_cost, tv, cv = self.calculate_total_cost(cand_sol)
             if cand_cost < current_cost and tv == 0 and cv == 0:
@@ -453,7 +452,7 @@ class DrayageALNSSolver:
                 improved = True
                 continue
 
-            # 3. Inter-route Relocate 시도
+            # 3. Inter-route 재배치
             cand_sol, rel_cost = self._ls_inter_route_relocate(current_sol, current_cost)
             if rel_cost < current_cost:
                 current_sol = cand_sol
@@ -500,7 +499,7 @@ class DrayageALNSSolver:
 
         return best_sol, best_cost
 
-    # ==================== Container Depot Custom Operators ====================
+    # _________________________ Container Depot Custom Operators _________________________
     def operator_change_container_depot(self, solution: Dict[str, List[Node]]) -> Dict[str, List[Node]]:
         """ce, se 요청의 컨테이너 창고(terminal_index)를 다른 창고로 무작위 변경하는 오퍼레이터"""
         new_sol = copy.deepcopy(solution)
@@ -530,7 +529,7 @@ class DrayageALNSSolver:
         return new_sol
 
     def operator_direct_ce_se_match(self, solution: Dict[str, List[Node]]) -> Dict[str, List[Node]]:
-        """동일 경로 내 ce(공컨테이너 수거)와 se(공컨테이너 배송)를 창고 방문 없이 직접 연결(Direct Transfer)"""
+        """동일 경로 내 ce(공컨테이너 수거)와 se(공컨테이너 배송)를 창고 방문 없이 직접 연결"""
         new_sol = copy.deepcopy(solution)
         
         for fleet_id, route in new_sol.items():
@@ -568,7 +567,7 @@ class DrayageALNSSolver:
                         n.is_bypassed = False
         return new_sol
 
-    # ==================== Destroy Operators ====================
+    # ___________________________ Destroy Operators __________________________
     def random_removal(self, solution: Dict[str, List[Node]], num_remove: int) -> Tuple[Dict[str, List[Node]], List[Request]]:
         destroyed = copy.deepcopy(solution)
         assigned_requests = list({n.request for route in solution.values() for n in route})
@@ -694,7 +693,7 @@ class DrayageALNSSolver:
 
         return destroyed, removed_requests
 
-    # ==================== Repair Operators ====================
+    # ___________________________ Repair Operators _________________________
     def greedy_repair(self, destroyed: Dict[str, List[Node]], removed_requests: List[Request]) -> Dict[str, List[Node]]:
         solution = copy.deepcopy(destroyed)
         if not removed_requests:
@@ -787,7 +786,7 @@ class DrayageALNSSolver:
         self.usage = {'destroy': defaultdict(int), 'repair': defaultdict(int)}
 
     def build_route_nodes(self, solution: Dict[str, List[Node]]) -> Dict[str, List[str]]:
-        """차량별 P/D 방문 순서를 문자열 리스트로 변환"""
+        """차량별 요청 방문 순서를 문자열 리스트로 변환"""
         route_nodes = {}
         for fleet_id, route in solution.items():
             nodes = [f"ts{fleet_id}"]
@@ -806,7 +805,7 @@ class DrayageALNSSolver:
         print(f"Starting Enhanced Interruptible PDP ALNS | Fleets: {len(self.list_fleet)}, Requests: {len(self.list_request)}")
         
         for iter in range(self.max_iter):
-            # 1. Destroy 연산자 선택 및 수행
+            # Destroy 연산자 선택 및 수행
             destroy_op = random.choices(
                 self.destroy_ops,
                 weights=[self.weights['destroy'][op] for op in self.destroy_ops]
@@ -828,16 +827,16 @@ class DrayageALNSSolver:
             else:
                 destroyed, removed = self.related_removal(current_solution, num_remove)
             
-            # 2. Repair 연산자 수행 (Noise 적용)
+            # Repair 연산자 수행
             if repair_op == 'greedy':
                 new_solution = self.greedy_repair(destroyed, removed)
             else:
                 new_solution = self.regret_repair(destroyed, removed)
 
-            # 3. Local Search (지역 탐색) 수행 - 해 집중 개선
+            # Local Search 수행 - 해 집중 개선
             new_solution = self.local_search(new_solution)
 
-            # 4. 해 수용 여부 판정 (Simulated Annealing)
+            # 해 수용 여부 판정 (Simulated Annealing)
             new_cost, tv, cv = self.calculate_total_cost(new_solution)
             
             if self.simulated_annealing(current_cost, new_cost, temperature):
@@ -999,7 +998,7 @@ def plot_solution(solution: Dict[str, List[Node]], list_request: List[Request],
     
     fig, ax = plt.subplots(figsize=(8, 8))
 
-    # 1. 모든 지점의 (location_id -> (x, y)) 좌표 룩업 딕셔너리 구축
+    # 모든 지점의 (location_id -> (x, y)) 딕셔너리
     loc_coords = {}
     for fleet in list_fleet:
         loc_coords[f"ts{fleet.id}"] = (fleet.x, fleet.y)
@@ -1014,7 +1013,7 @@ def plot_solution(solution: Dict[str, List[Node]], list_request: List[Request],
         loc_coords[f"ce{req.id}"] = (req.x, req.y)
         loc_coords[f"se{req.id}"] = (req.x, req.y)
 
-    # 2. 지점별 산점도 (Scatter Plot) 및 라벨링
+    # 지점 시각화
     for req in list_request:
         ax.scatter(req.x, req.y, color='black', s=30, zorder=4)
         ax.annotate(f'{req.type}{req.id}', (req.x, req.y), xytext=(5, -8), textcoords='offset points', fontsize=8)
@@ -1031,7 +1030,7 @@ def plot_solution(solution: Dict[str, List[Node]], list_request: List[Request],
         ax.scatter(fleet.x, fleet.y, color='gray', marker='o', s=60, zorder=4)
         ax.annotate(f'Depot_{fleet.id}', (fleet.x, fleet.y), xytext=(-30, -15), textcoords='offset points', fontsize=8, color='gray')
 
-    # 3. 차량별 이동 경로 (Path) 그리기
+    # 차량별 이동 경로 시각화
     colors = plt.cm.tab10.colors
     
     for idx, fleet in enumerate(list_fleet):
@@ -1085,12 +1084,12 @@ def main():
 
     dir_forder_raw = project_dir / "data"
     files = [
-        '4',
+        '4-1',
         #'10',
-        #'20', '20-4', '20-5', '20-6', '20-7',
-        #'30-1', '30-3', '30-4', '30-5', '30-9',
-        #'40-1', '40-3', '40-6', '40-8', '40-9',
-        #'50-1', '50-2', '50-4', '50-5', '50-6',
+        #'20-1', '20-2', '20-3', '20-4', '20-5',
+        #'30-1', '30-2', '30-3', '30-4', '30-5',
+        #'40-1', '40-2', '40-3', '40-4', '40-5',
+        #'50-1', '50-2', '50-3', '50-4', '50-5',
         #'60-1', '60-2', '60-3', '60-4', '60-5',
     ]
 
@@ -1102,7 +1101,7 @@ def main():
         dir_fleet = f"{file_prefix}_fleet.csv"
         dir_terminal = f"{file_prefix}_terminal.csv"
         dir_container_depot = f"{file_prefix}_container depot.csv"
-        dir_travel_time = f"{file_prefix}_traveltime_modified.csv"
+        dir_travel_time = f"{file_prefix}_traveltime.csv"
     
         dir_forder_save = project_dir / "results" / "ALNS"
         save_name = f"nspucc-{file_prefix}"
@@ -1136,7 +1135,6 @@ def main():
             cost_waiting=cost_waiting,
         )
         
-        # 실행 시간 측정 시작
         start_time = time.time()
         best_solution, best_cost, history, history_best = solver.solve()
         best_route_nodes = solver.build_route_nodes(best_solution)
@@ -1177,7 +1175,6 @@ def main():
             save_name=save_name
         )
         
-        # 3. 상세 결과 및 요약 파일 저장 (신규 추가)
         result_summary = {
             "Best Cost": best_cost,
             "Execution Time (s)": execution_time,
