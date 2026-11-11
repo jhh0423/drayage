@@ -1,0 +1,21 @@
+index,terminal index,x,y,e,l,terminal e,terminal l,demand,service time,terminal service time,type,container
+0,0,14,8,128,138,45,55,-2,4,4,consignee,full
+1,0,71,95,137,147,36,46,-2,4,4,consignee,full
+2,0,27,31,103,113,46,56,-2,4,4,consignee,full
+3,0,73,40,106,116,47,57,-1,4,4,consignee,full
+4,0,100,59,196,206,123,133,-1,4,4,consignee,full
+5,0,32,5,70,80,131,141,1,4,4,shipper,full
+6,-1,100,74,113,123,-1,-1,2,4,4,consignee,empty
+7,-1,60,23,74,84,-1,-1,1,4,4,consignee,empty
+8,-1,11,56,31,41,-1,-1,1,4,4,consignee,empty
+9,-1,4,10,123,133,-1,-1,1,4,4,consignee,empty
+10,-1,20,18,41,51,-1,-1,2,4,4,consignee,empty
+11,-1,93,88,150,160,-1,-1,1,4,4,consignee,empty
+12,-1,29,53,163,173,-1,-1,1,4,4,consignee,empty
+13,-1,54,43,181,191,-1,-1,-2,4,4,shipper,empty
+14,-1,57,36,115,125,-1,-1,-1,4,4,shipper,empty
+15,-1,61,33,151,161,-1,-1,-1,4,4,shipper,empty
+16,-1,94,26,103,113,-1,-1,-1,4,4,shipper,empty
+17,-1,7,9,139,149,-1,-1,-1,4,4,shipper,empty
+18,-1,28,43,128,138,-1,-1,-2,4,4,shipper,empty
+19,-1,54,45,193,203,-1,-1,-1,4,4,shipper,empty

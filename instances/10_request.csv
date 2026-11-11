@@ -1,0 +1,11 @@
+index,terminal index,x,y,e,l,terminal e,terminal l,type,container,demand,service time,terminal service time
+0,0,0,17,78,88,50,60,consignee,full,-1,2,2
+1,0,15,30,91,101,34,44,consignee,full,-2,2,2
+2,0,10,43,157,167,95,105,consignee,full,-1,2,2
+3,0,30,5,61,71,133,143,shipper,full,2,2,2
+4,0,10,20,75,85,160,170,shipper,full,1,2,2
+5,0,20,40,87,97,176,186,shipper,full,2,2,2
+6,-1,45,20,97,107,-1,-1,shipper,empty,-1,2,2
+7,-1,5,35,182,192,-1,-1,shipper,empty,-1,2,2
+8,-1,20,25,67,77,-1,-1,consignee,empty,1,2,2
+9,-1,15,10,32,42,-1,-1,consignee,empty,2,2,2
